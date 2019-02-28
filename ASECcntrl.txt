@@ -1,0 +1,231 @@
+({
+    doInIt : function(component, event, helper) {
+        helper.setInItData(component, event, helper);
+    },
+    AddRow : function(component, event, helper) {
+        if(!component.get("v.isPercentageFree")){
+            helper.addNewRow(component, event, helper);
+        } 
+    },
+    onfocus : function(component,event,helper){
+        $A.util.addClass(component.find("mySpinner"), "slds-show");
+        var forOpen = component.find("searchRes");
+        $A.util.addClass(forOpen, 'slds-is-open');
+        $A.util.removeClass(forOpen, 'slds-is-close');
+        // Get Default 5 Records order by createdDate DESC  
+        var getInputkeyWord = '';
+        helper.searchHelper(component,event,getInputkeyWord);
+    },
+    onblur : function(component,event,helper){       
+        component.set("v.listOfSearchRecords", null );
+        var forclose = component.find("searchRes");
+        $A.util.addClass(forclose, 'slds-is-close');
+        $A.util.removeClass(forclose, 'slds-is-open');
+    },
+    keyPressController : function(component, event, helper) {
+        var getInputkeyWord = event.getSource().get("v.value");
+        console.log(getInputkeyWord);
+        if( getInputkeyWord.length > 0 ){
+            var forOpen = component.find("searchRes");
+            $A.util.addClass(forOpen, 'slds-is-open');
+            $A.util.removeClass(forOpen, 'slds-is-close');
+            helper.searchHelper(component,event,getInputkeyWord);
+        }
+        else{  
+            component.set("v.listOfSearchRecords", null ); 
+            var forclose = component.find("searchRes");
+            $A.util.addClass(forclose, 'slds-is-close');
+            $A.util.removeClass(forclose, 'slds-is-open');
+        }
+    },
+    
+    // function for clear the Record Selaction 
+    clear :function(component,event,heplper){
+        var pillTarget = component.find("lookup-pill");
+        var lookUpTarget = component.find("lookupField"); 
+        
+        $A.util.addClass(pillTarget, 'slds-hide');
+        $A.util.removeClass(pillTarget, 'slds-show');
+        
+        $A.util.addClass(lookUpTarget, 'slds-show');
+        $A.util.removeClass(lookUpTarget, 'slds-hide');
+        
+        component.set("v.SearchKeyWord",null);
+        component.set("v.listOfSearchRecords", null );
+        component.set("v.selectedRecord", {} );   
+    },
+    
+    // This function call when the end User Select any record from the result list.   
+    handleComponentEvent : function(component, event, helper) {
+        // get the selected Account record from the COMPONETN event 	 
+        var selectedAccountGetFromEvent = event.getParam("recordByEvent");
+        console.log(selectedAccountGetFromEvent);
+        component.set("v.selectedRecord" , selectedAccountGetFromEvent);
+        //console.log(selectedAccountGetFromEvent); 
+        var forclose = component.find("lookup-pill");
+        $A.util.addClass(forclose, 'slds-show');
+        $A.util.removeClass(forclose, 'slds-hide');
+        
+        var forclose = component.find("searchRes");
+        $A.util.addClass(forclose, 'slds-is-close');
+        $A.util.removeClass(forclose, 'slds-is-open');
+        
+        var lookUpTarget = component.find("lookupField");
+        $A.util.addClass(lookUpTarget, 'slds-hide');
+        $A.util.removeClass(lookUpTarget, 'slds-show');  
+        
+    },
+    setLookupValue : function(component, event, helper) {
+        var selectedObject  = event.getParam("selectedObject");
+        var selectedIndex  = event.getParam("selectedIndex");
+        var accountSplitLst = component.get("v.accountSplitLst");
+        console.log('type of sales 1',typeof(accountSplitLst[selectedIndex]));
+        var accObj = typeof(accountSplitLst[selectedIndex]);
+        if(accObj != 'undefined'){
+            accountSplitLst[selectedIndex].Sales_Representative__r = selectedObject;
+            if(selectedObject.Division){
+                accountSplitLst[selectedIndex].Region__c = selectedObject.Division;
+            }else{
+                accountSplitLst[selectedIndex].Region__c = '';
+            }
+            component.set("v.accountSplitLst",accountSplitLst);
+            console.log(JSON.stringify(accountSplitLst));
+            //var sArray = component.get("v.SelectedUserList");
+            console.log('selectedObject.Division',selectedObject.Division);
+            console.log('SS---',accountSplitLst.length);
+            //UserList
+            var uUserList = component.get("v.UserList");
+            console.log('user list size ', uUserList.length);
+            var newUserList = []; 
+            for(var i=0;i<uUserList.length;i++){
+                
+                if(selectedObject.Id != uUserList[i].Id){ 
+                    newUserList.push(uUserList[i]);
+                }
+            }
+            component.set("v.UserList",newUserList);
+            console.log('new user List ', component.get("v.UserList").length);
+        }else{
+            location.reload();
+        }
+        
+        
+    },
+    
+    deleteRow : function(component, event, helper) {
+        component.set("v.deleteRecord",true);
+        var rowIndex = event.getSource().get("v.title");
+        component.set("v.deleteRecordIdx",rowIndex);
+    },
+    
+    onRegionChange : function(component, event, helper) {
+        var region = event.getSource().get("v.value");
+    },
+    saveRecords : function(component, event, helper) {
+        var splitList = component.get("v.accountSplitLst"); 
+        if(splitList.length > 0){
+            var percentageSize = 0;
+            for(var i=0;i<splitList.length;i++){
+                if(splitList[i].Percentage__c){
+                    percentageSize = parseInt(splitList[i].Percentage__c)+parseInt(percentageSize);
+                }
+            }
+            if(percentageSize == 100){
+        		helper.saveData(component, event, helper);        
+            }else{
+                component.find('notifLib').showNotice({
+                    "variant": "error",
+                    "header": "Something has gone wrong!",
+                    "message": "Your Account splits Percentage Total Should be 100%. Please edit existing account splits"
+                    
+                });
+            }
+        }
+        
+    },
+    checkPercentage : function(component, event, helper) {
+        component.set("v.errorMsg",'Please correct % value');
+        var inputCmp = component.find("showError");
+        if(isNaN(event.getSource().get("v.value")) ){ 
+            component.set("v.isPercentageFree",true);
+            if($A.util.hasClass(inputCmp,'slds-hide')){
+                $A.util.removeClass(inputCmp, 'slds-hide');
+            } 
+            if($A.util.hasClass(inputCmp,'slds-show')){ 
+            }else{
+                $A.util.addClass(inputCmp, 'slds-show');
+            } 
+        }else{
+            if((event.getSource().get("v.value") > -1)  && (event.getSource().get("v.value") < 101)){
+                console.log('inner----1'); 
+                if($A.util.hasClass(inputCmp,'slds-show')){
+                    $A.util.removeClass(inputCmp, 'slds-show');
+                } 
+                if($A.util.hasClass(inputCmp,'slds-hide')){ 
+                }else{
+                    $A.util.addClass(inputCmp, 'slds-hide');
+                }
+                component.set("v.isPercentageFree",false);
+            }else{  
+                component.set("v.isPercentageFree",true);
+                if($A.util.hasClass(inputCmp,'slds-hide')){
+                    $A.util.removeClass(inputCmp, 'slds-hide');
+                } 
+                if($A.util.hasClass(inputCmp,'slds-show')){ 
+                }else{
+                    $A.util.addClass(inputCmp, 'slds-show');
+                } 
+            }
+        } 
+    },
+    cancel : function(component, event, helper){
+        var url = helper.getBaseURL(component, event,'')+'lightning/r/Account/'+component.get("v.recordId")+'/view';
+        console.log('url save',url);
+        location.href = url;
+    },
+    closeDeleteModal : function(component, event,helper) {
+        component.set("v.deleteRecordIdx",'');
+        component.set("v.deleteRecord",false);
+        console.log('delete rec id ',component.get("v.deleteRecordId"));
+    },
+    deleteAccSplitRecord : function(component, event,helper) {
+        component.set("v.HideSpinner", true);
+    	var accSplitList = new Array()
+        var accSplitListTemp = new Array()
+        accSplitList = component.get("v.accountSplitLst");
+        var rowIndex = component.get("v.deleteRecordIdx");
+        var deletedRecordId;
+        var removedAccSplitId;
+        console.log(rowIndex);
+        for(var i=0;i< accSplitList.length; i++){
+            if(i != rowIndex){
+                accSplitListTemp.push(accSplitList[i]);
+            }else{
+                deletedRecordId = accSplitList[i].Sales_Representative__r.Id
+                removedAccSplitId = accSplitList[i].Id;
+            }
+        }
+        console.log('removedAccSplitId >>',removedAccSplitId);
+        if(removedAccSplitId != undefined){
+            helper.deleteAccountSplit(component, event, helper,removedAccSplitId);
+        }
+        accSplitList = accSplitListTemp;
+        component.set("v.accountSplitLst", accSplitListTemp);
+       
+        var userList = component.get("v.UserList"); 
+        var completeUserList = component.get("v.SelectedUserList");
+        for(var i = 0; i < completeUserList.length; i++){
+            if(completeUserList[i].Id == deletedRecordId){
+                userList.push(completeUserList[i]);
+            }
+        }
+        component.set("v.UserList",userList);
+        component.set("v.deleteRecordIdx",'');
+        component.set("v.deleteRecord",false);
+        component.set("v.HideSpinner", false);
+        /*uUserList.push(accSplitList[rowIndex].Sales_Representative__c);  
+        
+        */
+    }
+    
+})

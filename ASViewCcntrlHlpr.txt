@@ -1,0 +1,105 @@
+({
+    doInIt : function(component, event, helper) {
+        helper.getData(component, event,helper);
+        //helper.getUserList(component, event,helper);
+        
+    },
+    handleApplicationEvent : function(component, event,helper) {
+        console.log('application event fired ..');
+        helper.getData(component, event,helper)
+    },
+    editRecord : function(component, event,helper) {
+        console.log('edit record');
+        
+        console.log('event button id 1 ' , event.getSource().get("v.title"));
+        component.set("v.editRecordId",event.getSource().get("v.title"));
+        component.set("v.editRecord",true);
+        
+    },
+    openConformationModal: function(component, event,helper) {
+        console.log('delete record');
+        
+        console.log('delete ' , event.getSource().get("v.title"));
+        component.set("v.deleteRecordId",event.getSource().get("v.title"));
+        component.set("v.deleteRecord",true);
+        
+    },
+    
+    deleteAccSplitRecord : function(component, event,helper) {
+        console.log('delete record @@##');
+        var recId = component.get("v.deleteRecordId");
+        if(!($A.util.isEmpty(recId)) ){
+            console.log('deleting...');
+            helper.deleteData(component, event,helper,recId);
+        }
+        
+    },
+    closeModal : function(component, event,helper) {
+        var splitList = component.get("v.accountSplitList"); 
+        if(splitList.length > 0){
+            var percentageSize = 0;
+            for(var i=0;i<splitList.length;i++){
+                if(splitList[i].Percentage__c){
+                    percentageSize = parseInt(splitList[i].Percentage__c)+parseInt(percentageSize);
+                }
+            }
+            if(percentageSize == 100){
+                component.set("v.editRecord",false);      
+            }else{
+                component.find('notifLib').showNotice({
+                    "variant": "error",
+                    "header": "Something has gone wrong!",
+                    "message": "Your Account splits Percentage Total Should be 100%. Please edit existing account splits"
+                    
+                });
+            }
+        }
+        
+    },
+    closeConformationModal : function(component, event,helper) {
+        component.set("v.deleteRecordId",'');
+        component.set("v.deleteRecord",false);
+        console.log('delete rec id ',component.get("v.deleteRecordId"));
+    },
+    setLookupValue : function(component, event, helper) {
+        var selectedObject  = event.getParam("selectedObject");
+        var selectedIndex  = event.getParam("selectedIndex");
+        //var accountSplitList = component.get("v.accountSplitList");
+        console.log('selected index  ',selectedObject );
+        /*accountSplitList[selectedIndex].Sales_Representative__c = selectedObject;
+        component.set("v.accountSplitList",accountSplitList);
+        console.log(JSON.stringify(accountSplitList));*/
+    },
+    handleLoad : function(component, event,helper) {
+    },
+    handleSubmit : function(component, event,helper) {
+        console.log('submit..');
+    },
+    handleSuccess : function(component, event,helper) {
+        console.log('saved..');
+        component.set("v.editRecord",false);
+        helper.getData(component, event,helper);
+        //$A.get('e.force:refreshView').fire();
+    },
+    checkValidations : function(component, event,helper) {
+        var percentComponent = component.find('percentage');
+        var percent = percentComponent.get('v.value');
+        console.log('percent ' + percent);
+        if( (percent < 0) || (percent > 100) ){
+            console.log('percent error' + percent);
+            $A.util.addClass(percentComponent, 'slds-has-error');
+            component.set("v.displayError",true);
+        }else{
+            $A.util.removeClass(percentComponent, 'slds-has-error');
+            component.set("v.displayError",false);
+            component.find("accSplit").submit();
+        }
+    },
+    closeModalEventHandler : function(component, event,helper) {
+        var isClose = event.getParam("isClose");
+        if(isClose){
+            component.set("v.editRecord",false);
+            helper.getData(component, event,helper);
+        }
+    }
+})

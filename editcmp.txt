@@ -1,0 +1,187 @@
+<aura:component controller="AccountSplitController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithoutHeader,lightning:actionOverride" access="global" >
+    <aura:attribute name="accountSplitLst" type="Account_Split__c[]"></aura:attribute>
+    <aura:attribute name="actualRegionList" type="List"></aura:attribute>
+    <aura:attribute name="isPercentageFree" type="Boolean"></aura:attribute>
+    <aura:attribute name="UserList" type="List"></aura:attribute>
+    <aura:attribute name="SelectedUserList" type="List"></aura:attribute>
+    <aura:attribute name="errorMsg" type="String"></aura:attribute>
+    <aura:attribute name="openFrom" type="String"></aura:attribute>
+    <aura:attribute name="deleteRecord" type="boolean" default="false"></aura:attribute>
+    <aura:attribute name="deleteRecordIdx" type="String"></aura:attribute>
+    <aura:attribute name="accSplit" type="Account_Split__c" default="{'sobjectType': 'Account_Split__c',
+                                                                     'Sales_Representative__c':''
+                                                                     }" ></aura:attribute>
+    
+    <aura:attribute name="renderLookupList" type="Boolean" default="true"></aura:attribute>
+    <aura:handler event="c:LookupEvent" action="{!c.setLookupValue}"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInIt}"></aura:handler>
+    <aura:registerEvent name="appEvent" type="c:CloseModal"/>
+    <!--Start Aura Spinner -->
+    <aura:attribute name="HideSpinner" type="Boolean" default="false"/>
+    <aura:renderIf isTrue="{!v.HideSpinner}">
+        <div class="slds-spinner_container" >
+            <div class="slds-spinner--brand slds-spinner slds-spinner--large" role="alert">
+                <span class="slds-assistive-text">Loading, Please Wait...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:renderIf>
+    <!--End Aura Spinner -->
+    <div style="background-color:white;">
+        <aura:if isTrue="{!v.openFrom != 'update'}">
+            <div class="slds-page-header">
+                <div class="slds-page-header__row">
+                    <div class="slds-page-header__col-title">
+                        <div class="slds-media">
+                            <div class="slds-media__figure">
+                                
+                            </div>
+                            <div class="slds-media__body ">
+                                <div class="slds-page-header__name slds-align_absolute-center">
+                                    <div class="slds-page-header__name-title ">
+                                        <h1>
+                                            <span class="slds-page-header__title slds-truncate" title="Add Account Split">Add Account Split</span>
+                                        </h1>
+                                    </div>
+                                </div> 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <div class="slds-m-top_medium" style="padding:10px;">
+            <table id="dataTable">
+                <thead>
+                    <tr >
+                        <td colspan="4">
+                            <div class="slds-hide" aura:id="showError">
+                                <div class="slds-notify_container slds-is-relative">
+                                    <div class="slds-notify slds-notify_toast slds-theme_error" role="status">
+                                        <span class="slds-assistive-text">error</span> 
+                                        <div class="slds-notify__content">
+                                            <h2 class="slds-text-heading_small ">{!v.errorMsg}</h2>
+                                        </div> 
+                                    </div>
+                                </div>
+                            </div>
+                        </td> 
+                    </tr>
+                    <tr>
+                        <th>
+                            Sales Representative
+                        </th>
+                        <th>
+                            Percent(%)
+                        </th>
+                        <th>
+                            Region (View Only)
+                        </th>
+                        <th>
+                            Actual Region 
+                        </th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <aura:iteration items="{!v.accountSplitLst}" var="accData" indexVar="idx">
+                        <tr id="{!'trow'+idx}">
+                            <td>
+                                <aura:renderIf isTrue="{!v.renderLookupList}">
+                                	<c:CustomLookupComponent iconName="standard:user" searchList="{!v.UserList}" fieldkey="Name" index="{!idx}" value="{!accData.Sales_Representative__r.Name}"></c:CustomLookupComponent>
+                            	</aura:renderIf>
+                                </td>
+                            <td > 
+                                <!--
+                                    <input type="text" id="{!'inputNumber'+idx}" class="slds-input" data-tIndex="{!idx}" name="input1" value="{!accData.Percentage__c}" onchange="{!c.checkPercentage}" />
+                                    <div id="{!'inputNumber'+idx+'_1'}" style="display:none;">Error</div>
+                                -->
+                                
+                                <lightning:input name="Percentage" formatter="percent" value="{!accData.Percentage__c}" onchange="{!c.checkPercentage}" messageWhenBadInput="You must say foo"   /> 
+                            </td>
+                            <td>
+                                <lightning:input disabled="true" name="Region" value="{!accData.Region__c}"/>
+                            </td>
+                            <td> 
+                                <ui:inputSelect aura:id="{!'aregion'+idx}" class="slds-select" label="" value="{!accData.Actual_Region__c}">
+                                    <ui:inputSelectOption text="" value="true"/>
+                                    <aura:iteration items="{!v.actualRegionList}" var="opt">
+                                        <ui:inputSelectOption text="{!opt}" />
+                                    </aura:iteration>
+                                </ui:inputSelect>
+                            </td>
+                            <td>
+                                    <!--<aura:renderIf isTrue="{!v.accountSplitLst.length > 1}">-->
+                                    <lightning:icon class="pointer-cursor" title="{!idx}" iconName="utility:delete" alternativeText="delete" onclick="{!c.deleteRow}" />
+                                    <!--</aura:renderIf> -->
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table> 
+            
+            <div class="slds-page-header slds-m-top_medium">
+                <div class="slds-page-header__row">
+                    <div class="slds-page-header__col-title">
+                        <div class="slds-media">
+                            <div class="slds-media__figure">
+                                
+                            </div>
+                            <div class="slds-media__body ">
+                                <div class="slds-page-header__name slds-align_absolute-center">
+                                    <div class="slds-page-header__name-title ">
+                                        
+                                        
+                                        <lightning:button label="Cancel" onclick="{!c.cancel}" />
+                                        <lightning:button label="Add 1 More Row" iconName="utility:add" iconPosition="left" onclick="{!c.AddRow}" />
+                                        <lightning:button variant="brand" label="Save" title="Save" onclick="{! c.saveRecords }" />
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <aura:If isTrue="{!v.deleteRecord}">
+        <div class="demo-only" style="height: 640px;">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1"
+                     class="slds-modal slds-fade-in-open slds-modal_medium">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" >
+                            <!--<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+       <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close" />
+
+      </svg>-->
+                            <lightning:icon iconName="utility:close" alternativeText="close" variant="inverse" />
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Delete Record</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-text-align_center">
+                            <div ><h1><b>Are You Sure You Want To Delete The Record ?</b></h1></div>
+                            <div class="slds-m-top_small"> 
+                                <button class="slds-button slds-button_destructive" onclick="{!c.deleteAccSplitRecord}">Yes</button>
+                                
+                                <lightning:button variant="brand" label="No" title="Cancel" onclick="{!c.closeDeleteModal}" />
+                                
+                                
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:If>
+</aura:component>
